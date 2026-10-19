@@ -1,0 +1,159 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile populated from authenticated Google account",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 128 },
+        "photoURL": { "type": "string", "maxLength": 1024 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "readingTheme": { "type": "string", "enum": ["dark", "light", "sepia"] },
+        "fontSize": { "type": "number" },
+        "lineHeight": { "type": "number" },
+        "fontFamily": { "type": "string", "maxLength": 32 },
+        "marginSize": { "type": "string", "enum": ["compact", "normal", "spacious"] },
+        "language": { "type": "string", "enum": ["en", "uz", "ru"] }
+      },
+      "required": ["id", "email", "displayName", "createdAt", "updatedAt"]
+    },
+    "LibraryItem": {
+      "title": "LibraryItem",
+      "description": "A book saved in a user's personal library",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "bookId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 256 },
+        "authors": { "type": "array" },
+        "coverUrl": { "type": "string", "maxLength": 1024 },
+        "status": { "type": "string", "enum": ["want_to_read", "currently_reading", "finished"] },
+        "pageCount": { "type": "number" },
+        "currentPage": { "type": "number" },
+        "progressPercent": { "type": "number" },
+        "rating": { "type": "number" },
+        "lastReadAt": { "type": "string", "format": "date-time" },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "finishedAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "bookId", "title", "status", "createdAt", "updatedAt"]
+    },
+    "Collection": {
+      "title": "Collection",
+      "description": "User created collection of books",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 500 },
+        "bookIds": { "type": "array" },
+        "color": { "type": "string", "maxLength": 32 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "name", "createdAt", "updatedAt"]
+    },
+    "Bookmark": {
+      "title": "Bookmark",
+      "description": "User bookmark for a specific location in a book",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "bookId": { "type": "string", "maxLength": 128 },
+        "bookTitle": { "type": "string", "maxLength": 256 },
+        "location": { "type": "string", "maxLength": 128 },
+        "chapterTitle": { "type": "string", "maxLength": 256 },
+        "label": { "type": "string", "maxLength": 128 },
+        "textSnippet": { "type": "string", "maxLength": 512 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "bookId", "bookTitle", "location", "createdAt"]
+    },
+    "Note": {
+      "title": "Note",
+      "description": "User reading note or quote annotation",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "bookId": { "type": "string", "maxLength": 128 },
+        "bookTitle": { "type": "string", "maxLength": 256 },
+        "chapterTitle": { "type": "string", "maxLength": 256 },
+        "selectedText": { "type": "string", "maxLength": 1024 },
+        "content": { "type": "string", "maxLength": 2048 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "bookId", "bookTitle", "content", "createdAt", "updatedAt"]
+    },
+    "ReadingGoal": {
+      "title": "ReadingGoal",
+      "description": "User defined reading goal",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "enum": ["books_per_year", "pages_per_day", "minutes_per_day"] },
+        "target": { "type": "number" },
+        "year": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "type", "target", "createdAt", "updatedAt"]
+    },
+    "ReadingSession": {
+      "title": "ReadingSession",
+      "description": "Tracked reading session time and pages",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "bookId": { "type": "string", "maxLength": 128 },
+        "bookTitle": { "type": "string", "maxLength": 256 },
+        "durationSeconds": { "type": "number" },
+        "pagesRead": { "type": "number" },
+        "sessionDate": { "type": "string", "maxLength": 32 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "bookId", "bookTitle", "durationSeconds", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profile and reader preferences"
+    },
+    "/library/{libraryId}": {
+      "schema": { "$ref": "#/entities/LibraryItem" },
+      "description": "User saved books and reading statuses"
+    },
+    "/collections/{collectionId}": {
+      "schema": { "$ref": "#/entities/Collection" },
+      "description": "User created collections"
+    },
+    "/bookmarks/{bookmarkId}": {
+      "schema": { "$ref": "#/entities/Bookmark" },
+      "description": "User reading bookmarks"
+    },
+    "/notes/{noteId}": {
+      "schema": { "$ref": "#/entities/Note" },
+      "description": "User reading notes"
+    },
+    "/readingGoals/{goalId}": {
+      "schema": { "$ref": "#/entities/ReadingGoal" },
+      "description": "User reading goals"
+    },
+    "/readingSessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/ReadingSession" },
+      "description": "User tracked reading sessions"
+    }
+  }
+}

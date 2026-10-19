@@ -1,0 +1,6 @@
+{
+  "name": "Booklon",
+  "description": "Better Books, Bigger Dreams — modern, mobile-first book reading platform with real Google authentication, library management, and distraction-free reader.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

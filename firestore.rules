@@ -1,0 +1,211 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net - Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'email', 'displayName', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.email is string && data.email.size() <= 256
+        && data.displayName is string && data.displayName.size() <= 128
+        && (!('photoURL' in data) || data.photoURL == null || (data.photoURL is string && data.photoURL.size() <= 1024))
+        && (!('readingTheme' in data) || data.readingTheme in ['dark', 'light', 'sepia'])
+        && (!('fontSize' in data) || data.fontSize is number)
+        && (!('lineHeight' in data) || data.lineHeight is number)
+        && (!('fontFamily' in data) || (data.fontFamily is string && data.fontFamily.size() <= 32))
+        && (!('marginSize' in data) || data.marginSize in ['compact', 'normal', 'spacious'])
+        && (!('language' in data) || data.language in ['en', 'uz', 'ru']);
+    }
+
+    function isValidLibrary(data) {
+      return data.keys().hasAll(['id', 'userId', 'bookId', 'title', 'status', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId == request.auth.uid
+        && data.bookId is string && data.bookId.size() <= 128
+        && data.title is string && data.title.size() <= 256
+        && data.status in ['want_to_read', 'currently_reading', 'finished']
+        && (!('pageCount' in data) || data.pageCount is number)
+        && (!('currentPage' in data) || data.currentPage is number)
+        && (!('progressPercent' in data) || data.progressPercent is number)
+        && (!('rating' in data) || data.rating is number)
+        && (!('coverUrl' in data) || data.coverUrl == null || (data.coverUrl is string && data.coverUrl.size() <= 1024))
+        && (!('authors' in data) || data.authors is list)
+        && (!('startedAt' in data) || data.startedAt == null || (data.startedAt is string && data.startedAt.size() <= 64))
+        && (!('finishedAt' in data) || data.finishedAt == null || (data.finishedAt is string && data.finishedAt.size() <= 64))
+        && (!('lastReadAt' in data) || data.lastReadAt == null || (data.lastReadAt is string && data.lastReadAt.size() <= 64));
+    }
+
+    function isValidCollection(data) {
+      return data.keys().hasAll(['id', 'userId', 'name', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId == request.auth.uid
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && (!('description' in data) || data.description == null || (data.description is string && data.description.size() <= 500))
+        && (!('color' in data) || (data.color is string && data.color.size() <= 32))
+        && (!('bookIds' in data) || (data.bookIds is list && data.bookIds.size() <= 500));
+    }
+
+    function isValidBookmark(data) {
+      return data.keys().hasAll(['id', 'userId', 'bookId', 'bookTitle', 'location', 'createdAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId == request.auth.uid
+        && data.bookId is string && data.bookId.size() <= 128
+        && data.bookTitle is string && data.bookTitle.size() <= 256
+        && data.location is string && data.location.size() <= 128
+        && (!('chapterTitle' in data) || data.chapterTitle == null || (data.chapterTitle is string && data.chapterTitle.size() <= 256))
+        && (!('label' in data) || data.label == null || (data.label is string && data.label.size() <= 128))
+        && (!('textSnippet' in data) || data.textSnippet == null || (data.textSnippet is string && data.textSnippet.size() <= 512));
+    }
+
+    function isValidNote(data) {
+      return data.keys().hasAll(['id', 'userId', 'bookId', 'bookTitle', 'content', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId == request.auth.uid
+        && data.bookId is string && data.bookId.size() <= 128
+        && data.bookTitle is string && data.bookTitle.size() <= 256
+        && data.content is string && data.content.size() > 0 && data.content.size() <= 2048
+        && (!('chapterTitle' in data) || data.chapterTitle == null || (data.chapterTitle is string && data.chapterTitle.size() <= 256))
+        && (!('selectedText' in data) || data.selectedText == null || (data.selectedText is string && data.selectedText.size() <= 1024));
+    }
+
+    function isValidReadingGoal(data) {
+      return data.keys().hasAll(['id', 'userId', 'type', 'target', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId == request.auth.uid
+        && data.type in ['books_per_year', 'pages_per_day', 'minutes_per_day']
+        && data.target is number && data.target > 0
+        && (!('year' in data) || data.year is number);
+    }
+
+    function isValidReadingSession(data) {
+      return data.keys().hasAll(['id', 'userId', 'bookId', 'bookTitle', 'durationSeconds', 'createdAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId == request.auth.uid
+        && data.bookId is string && data.bookId.size() <= 128
+        && data.bookTitle is string && data.bookTitle.size() <= 256
+        && data.durationSeconds is number && data.durationSeconds >= 0
+        && (!('pagesRead' in data) || data.pagesRead is number)
+        && (!('sessionDate' in data) || (data.sessionDate is string && data.sessionDate.size() <= 32));
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidUser(incoming())
+                    && resource != null
+                    && incoming().id == resource.data.id
+                    && incoming().email == resource.data.email
+                    && incoming().createdAt == resource.data.createdAt
+                    && incoming().diff(resource.data).affectedKeys().hasOnly(['displayName', 'photoURL', 'updatedAt', 'readingTheme', 'fontSize', 'lineHeight', 'fontFamily', 'marginSize', 'language']);
+      allow delete: if isOwner(userId);
+    }
+
+    // Library collection
+    match /library/{libraryId} {
+      allow get: if isSignedIn() && isValidId(libraryId) && (resource == null || resource.data.userId == request.auth.uid);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(libraryId) && incoming().userId == request.auth.uid && isValidLibrary(incoming());
+      allow update: if isSignedIn() && isValidId(libraryId)
+                    && resource != null
+                    && resource.data.userId == request.auth.uid
+                    && incoming().userId == request.auth.uid
+                    && incoming().bookId == resource.data.bookId
+                    && incoming().createdAt == resource.data.createdAt
+                    && isValidLibrary(incoming())
+                    && incoming().diff(resource.data).affectedKeys().hasOnly(['status', 'currentPage', 'progressPercent', 'rating', 'lastReadAt', 'startedAt', 'finishedAt', 'updatedAt', 'title', 'authors', 'coverUrl', 'pageCount']);
+      allow delete: if isSignedIn() && isValidId(libraryId) && resource != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Collections
+    match /collections/{collectionId} {
+      allow get: if isSignedIn() && isValidId(collectionId) && (resource == null || resource.data.userId == request.auth.uid);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(collectionId) && incoming().userId == request.auth.uid && isValidCollection(incoming());
+      allow update: if isSignedIn() && isValidId(collectionId)
+                    && resource != null
+                    && resource.data.userId == request.auth.uid
+                    && incoming().userId == request.auth.uid
+                    && incoming().createdAt == resource.data.createdAt
+                    && isValidCollection(incoming())
+                    && incoming().diff(resource.data).affectedKeys().hasOnly(['name', 'description', 'bookIds', 'color', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(collectionId) && resource != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Bookmarks
+    match /bookmarks/{bookmarkId} {
+      allow get: if isSignedIn() && isValidId(bookmarkId) && (resource == null || resource.data.userId == request.auth.uid);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(bookmarkId) && incoming().userId == request.auth.uid && isValidBookmark(incoming());
+      allow update: if isSignedIn() && isValidId(bookmarkId)
+                    && resource != null
+                    && resource.data.userId == request.auth.uid
+                    && incoming().userId == request.auth.uid
+                    && incoming().createdAt == resource.data.createdAt
+                    && isValidBookmark(incoming())
+                    && incoming().diff(resource.data).affectedKeys().hasOnly(['label', 'textSnippet', 'location', 'chapterTitle']);
+      allow delete: if isSignedIn() && isValidId(bookmarkId) && resource != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Notes
+    match /notes/{noteId} {
+      allow get: if isSignedIn() && isValidId(noteId) && (resource == null || resource.data.userId == request.auth.uid);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(noteId) && incoming().userId == request.auth.uid && isValidNote(incoming());
+      allow update: if isSignedIn() && isValidId(noteId)
+                    && resource != null
+                    && resource.data.userId == request.auth.uid
+                    && incoming().userId == request.auth.uid
+                    && incoming().createdAt == resource.data.createdAt
+                    && isValidNote(incoming())
+                    && incoming().diff(resource.data).affectedKeys().hasOnly(['content', 'selectedText', 'chapterTitle', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(noteId) && resource != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Reading Goals
+    match /readingGoals/{goalId} {
+      allow get: if isSignedIn() && isValidId(goalId) && (resource == null || resource.data.userId == request.auth.uid);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(goalId) && incoming().userId == request.auth.uid && isValidReadingGoal(incoming());
+      allow update: if isSignedIn() && isValidId(goalId)
+                    && resource != null
+                    && resource.data.userId == request.auth.uid
+                    && incoming().userId == request.auth.uid
+                    && incoming().createdAt == resource.data.createdAt
+                    && isValidReadingGoal(incoming())
+                    && incoming().diff(resource.data).affectedKeys().hasOnly(['target', 'type', 'year', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(goalId) && resource != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Reading Sessions
+    match /readingSessions/{sessionId} {
+      allow get: if isSignedIn() && isValidId(sessionId) && (resource == null || resource.data.userId == request.auth.uid);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(sessionId) && incoming().userId == request.auth.uid && isValidReadingSession(incoming());
+      allow update: if false; // Sessions are immutable log records
+      allow delete: if isSignedIn() && isValidId(sessionId) && resource != null && resource.data.userId == request.auth.uid;
+    }
+  }
+}
